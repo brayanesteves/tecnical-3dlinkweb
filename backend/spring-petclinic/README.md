@@ -120,6 +120,7 @@ java -jar target/spring-petclinic-4.0.0-SNAPSHOT.jar
 
 Con el backend en ejecución, puedes probar las peticiones directamente desde Swagger:
 
+- **Health Check**: [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
 - **Swagger UI**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 - **Esquema OpenAPI JSON**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 
@@ -129,11 +130,14 @@ Con el backend en ejecución, puedes probar las peticiones directamente desde Sw
 
 - `GET /api/v1/vets` - Lista de veterinarios y especialidades
 - `POST /api/v1/owners` - Registro de nuevo dueño
-- `GET /api/v1/owners` - Búsqueda de dueños
+- `GET /api/v1/owners` - Búsqueda de dueños (con paginación y filtro)
 - `GET /api/v1/owners/{id}` - Detalle de dueño por ID
+- `PUT /api/v1/owners/{id}` - Actualizar datos de un dueño
+- `GET /api/v1/pet-types` - Catálogo de tipos de mascotas
+- `GET /api/v1/owners/{id}/pets` - Lista de mascotas de un dueño
 - `POST /api/v1/owners/{id}/pets` - Registro de mascota para un dueño
-- `GET /api/v1/owners/{id}/pets/types` - Tipos de mascotas disponibles
-- `POST /api/v1/owners/{ownerId}/pets/{petId}/visits` - Agendar cita para una mascota
+- `PUT /api/v1/owners/{ownerId}/pets/{petId}` - Actualizar datos de una mascota
+- `POST /api/v1/owners/{ownerId}/pets/{petId}/visits` - Agendar cita para una mascota (fecha futura)
 - `GET /api/v1/owners/{ownerId}/pets/{petId}/visits` - Historial de visitas de una mascota
 
 ---
@@ -255,6 +259,7 @@ java -jar target/spring-petclinic-4.0.0-SNAPSHOT.jar
 
 When the application is running, test endpoints via Swagger:
 
+- **Health Check**: [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
 - **Swagger UI**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 - **OpenAPI Schema (JSON)**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 
@@ -264,9 +269,12 @@ When the application is running, test endpoints via Swagger:
 
 - `GET /api/v1/vets` - List vets and specialties
 - `POST /api/v1/owners` - Register a new owner
-- `GET /api/v1/owners` - Search owners by last name
+- `GET /api/v1/owners` - Search owners by last name (with pagination and filter)
 - `GET /api/v1/owners/{id}` - Get owner by ID
+- `PUT /api/v1/owners/{id}` - Update owner contact details
+- `GET /api/v1/pet-types` - Catalog of pet types
+- `GET /api/v1/owners/{id}/pets` - List pets for an owner
 - `POST /api/v1/owners/{id}/pets` - Add a pet to an owner
-- `GET /api/v1/owners/{id}/pets/types` - List supported pet types
-- `POST /api/v1/owners/{ownerId}/pets/{petId}/visits` - Schedule a visit for a pet
+- `PUT /api/v1/owners/{ownerId}/pets/{petId}` - Update a pet's details
+- `POST /api/v1/owners/{ownerId}/pets/{petId}/visits` - Schedule a visit for a pet (future date)
 - `GET /api/v1/owners/{ownerId}/pets/{petId}/visits` - Retrieve pet visit history
