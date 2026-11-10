@@ -28,13 +28,16 @@ La siguiente matriz documenta la equivalencia funcional entre los controladores 
 | Capacidad de Negocio | Controlador Legacy | Nuevo Endpoint REST | Método HTTP | DTO Solicitud / Validaciones | DTO Respuesta | Código HTTP |
 | :--- | :--- | :--- | :---: | :--- | :--- | :---: |
 | **Listar veterinarios** | `VetController.showVetList` | `/api/v1/vets` | `GET` | Ninguno | `List<VetResponseDto>` | `200 OK` |
-| **Registrar dueño** | `OwnerController.processCreationForm` | `/api/v1/owners` | `POST` | `OwnerRequestDto` (`@NotBlank`, `@Pattern` 10 dígitos) | `OwnerResponseDto` | `201 Created` |
-| **Buscar dueños por apellido** | `OwnerController.processFindForm` | `/api/v1/owners?lastName=...` | `GET` | Parámetro `lastName` (opcional) | `List<OwnerResponseDto>` | `200 OK` |
+| **Registrar dueño** | `OwnerController.processCreationForm` | `/api/v1/owners` | `POST` | `OwnerRequestDto` (`@NotBlank`, `@Pattern` 10 dígitos) | `OwnerResponseDto` | `201 Created` / `400 Bad Request` |
+| **Buscar dueños por apellido** | `OwnerController.processFindForm` | `/api/v1/owners?lastName=...` | `GET` | Parámetro `lastName` (opcional), `page`, `size` | `Page<OwnerResponseDto>` | `200 OK` |
 | **Consultar dueño por ID** | `OwnerController.showOwner` | `/api/v1/owners/{ownerId}` | `GET` | Path variable `ownerId` | `OwnerResponseDto` | `200 OK` / `404 Not Found` |
-| **Listar tipos de mascotas** | `PetController.populatePetTypes` | `/api/v1/owners/{ownerId}/pets/types` | `GET` | Path variable `ownerId` | `List<PetTypeDto>` | `200 OK` |
-| **Agregar mascota a un dueño** | `PetController.processCreationForm` | `/api/v1/owners/{ownerId}/pets` | `POST` | `PetRequestDto` (`@NotBlank`, `@NotNull` fecha, `typeId`) | `PetResponseDto` | `201 Created` |
-| **Agendar visita médica** | `VisitController.processNewVisitForm` | `/api/v1/owners/{ownerId}/pets/{petId}/visits` | `POST` | `VisitRequestDto` (`@Future`, `@NotBlank` descripción) | `VisitResponseDto` | `201 Created` / `400 Bad Request` |
-| **Consultar visitas de mascota** | `OwnerController.showOwner` (vistas anidadas) | `/api/v1/owners/{ownerId}/pets/{petId}/visits` | `GET` | Path variables `ownerId`, `petId` | `List<VisitResponseDto>` | `200 OK` |
+| **Actualizar dueño** | `OwnerController.processUpdateOwnerForm` | `/api/v1/owners/{ownerId}` | `PUT` | `OwnerRequestDto` (`@NotBlank`, `@Pattern` 10 dígitos) | `OwnerResponseDto` | `200 OK` / `400 Bad Request` / `404 Not Found` |
+| **Listar catálogo de tipos de mascotas** | `PetController.populatePetTypes` | `/api/v1/pet-types` | `GET` | Ninguno | `List<PetTypeDto>` | `200 OK` |
+| **Listar mascotas de un dueño** | `OwnerController.showOwner` | `/api/v1/owners/{ownerId}/pets` | `GET` | Path variable `ownerId` | `List<PetResponseDto>` | `200 OK` / `404 Not Found` |
+| **Agregar mascota a un dueño** | `PetController.processCreationForm` | `/api/v1/owners/{ownerId}/pets` | `POST` | `PetRequestDto` (`@NotBlank`, `@NotNull` fecha, `typeId`) | `PetResponseDto` | `201 Created` / `400 Bad Request` / `404 Not Found` |
+| **Actualizar mascota de un dueño** | `PetController.processUpdateForm` | `/api/v1/owners/{ownerId}/pets/{petId}` | `PUT` | `PetRequestDto` (`@NotBlank`, `@NotNull` fecha, `typeId`) | `PetResponseDto` | `200 OK` / `400 Bad Request` / `404 Not Found` |
+| **Agendar visita médica** | `VisitController.processNewVisitForm` | `/api/v1/owners/{ownerId}/pets/{petId}/visits` | `POST` | `VisitRequestDto` (`@Future`, `@NotBlank` descripción) | `VisitResponseDto` | `201 Created` / `400 Bad Request` / `404 Not Found` |
+| **Consultar visitas de una mascota** | `OwnerController.showOwner` | `/api/v1/owners/{ownerId}/pets/{petId}/visits` | `GET` | Path variables `ownerId`, `petId` | `List<VisitResponseDto>` | `200 OK` / `404 Not Found` |
 
 ---
 
