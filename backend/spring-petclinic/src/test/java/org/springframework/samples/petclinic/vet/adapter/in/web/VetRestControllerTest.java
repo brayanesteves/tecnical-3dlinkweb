@@ -21,7 +21,9 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.samples.petclinic.common.exception.GlobalExceptionHandler;
 import org.springframework.samples.petclinic.vet.domain.SpecialtyModel;
 import org.springframework.samples.petclinic.vet.domain.VetModel;
 import org.springframework.samples.petclinic.vet.port.in.GetVetsUseCase;
@@ -35,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(VetRestController.class)
+@Import(GlobalExceptionHandler.class)
 class VetRestControllerTest {
 
 	@Autowired
