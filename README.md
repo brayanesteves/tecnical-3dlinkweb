@@ -1,40 +1,45 @@
-# Modernized Spring PetClinic Backend
+# Spring PetClinic - Modernized Backend
 
-[![Java](https://img.shields.io/badge/Java-21%20LTS-orange.svg)](https://www.oracle.com/java/technologies/downloads/#java21)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![OpenAPI](https://img.shields.io/badge/OpenAPI-3.0-blue.svg)](http://localhost:8080/swagger-ui.html)
-[![Architecture](https://img.shields.io/badge/Architecture-Hexagonal%20%2F%20Ports%20%26%20Adapters-informational.svg)]()
-[![Build & Tests](https://img.shields.io/badge/Tests-100%25%20Passing-success.svg)]()
-
-A modernized backend implementation of the classic Spring PetClinic application, refactored into **Hexagonal Architecture (Ports and Adapters)**, upgraded to **Java 21 LTS**, and equipped with full **REST APIs** documented via **OpenAPI 3.0 (Swagger UI)**.
+A modernized backend for the Spring PetClinic application. The project was migrated to **Java 21 LTS**, refactored into a **Hexagonal Architecture (Ports and Adapters)**, and equipped with a full **REST API** documented with **OpenAPI 3.0 (Swagger UI)**.
 
 ---
 
 ## Table of Contents
 
-- [Architectural Overview](#architectural-overview)
-- [Bounded Contexts and Modular Structure](#bounded-contexts-and-modular-structure)
-- [Technology Stack](#technology-stack)
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Tech Stack](#tech-stack)
 - [Prerequisites](#prerequisites)
-- [Build and Run Instructions](#build-and-run-instructions)
-- [OpenAPI and Swagger UI](#openapi-and-swagger-ui)
-- [REST Endpoints Reference](#rest-endpoints-reference)
-- [Error Handling Standards](#error-handling-standards)
-- [GitFlow Branching Strategy](#gitflow-branching-strategy)
-- [AI Tooling and Assistance](#ai-tooling-and-assistance)
+- [Build and Run](#build-and-run)
+- [API Documentation (Swagger UI)](#api-documentation-swagger-ui)
+- [REST Endpoints](#rest-endpoints)
+- [Error Handling](#error-handling)
+- [GitFlow Workflow](#gitflow-workflow)
 
 ---
 
-## Architectural Overview
+## Overview
 
-The backend was refactored from a monolithic MVC structure to a **Hexagonal Architecture (Ports and Adapters)** pattern. This decouples core business logic from external frameworks, persistence mechanisms, and transport layers.
+The original Spring PetClinic application was refactored to separate business logic from technical infrastructure and framework concerns:
+
+- **Hexagonal Architecture**: Business models and use cases are isolated from persistence and web layers.
+- **Java 21**: Upgraded to the modern LTS release.
+- **REST API & Swagger**: Replaces legacy server-side page forms with clean JSON endpoints, input validation, and interactive documentation.
+- **Automated Tests**: Preserves all existing functionality while adding comprehensive unit and integration tests.
+
+---
+
+## Architecture
+
+The project follows the **Ports and Adapters** pattern:
 
 ```
 +---------------------------------------------------------------------------------+
 |                                 INBOUND ADAPTERS                                |
-|  - Rest Controllers (/api/v1/*)                                                 |
-|  - Request / Response DTOs with Bean Validation (Jakarta Validation)            |
-|  - Swagger / OpenAPI Annotations                                                |
+|  - REST Controllers (/api/v1/*)                                                 |
+|  - Request and Response DTOs with Bean Validation                               |
+|  - OpenAPI 3.0 / Swagger Annotations                                            |
 +---------------------------------------------------------------------------------+
                                        |
                                        v  (calls Inbound Port)
@@ -42,16 +47,16 @@ The backend was refactored from a monolithic MVC structure to a **Hexagonal Arch
 |                                APPLICATION CORE                                 |
 |  +---------------------------+             +----------------------------------+ |
 |  |     INBOUND PORTS         |             |          OUTBOUND PORTS          | |
-|  |  (Use Case Interfaces)    |             |       (Repository Interfaces)    | |
+|  |     (Use Cases)           |             |       (Repository Ports)         | |
 |  +---------------------------+             +----------------------------------+ |
 |               ^                                             ^                   |
 |               | implements                                  | calls             |
 |  +----------------------------------------------------------+                 | |
 |  |                   DOMAIN SERVICES & BUSINESS LOGIC                         | |
-|  |  - Validations, rules, mapping, model transformations                      | |
+|  |  - Validations, rules, and model mapping                                   | |
 |  +----------------------------------------------------------------------------+ |
-|  |                       DOMAIN ENTITIES / MODELS                             | |
-|  |  - Pure POJOs: VetModel, OwnerModel, PetModel, VisitModel                  | |
+|  |                       DOMAIN MODELS                                        | |
+|  |  - Pure Java objects: VetModel, OwnerModel, PetModel, VisitModel           | |
 |  +----------------------------------------------------------------------------+ |
 +---------------------------------------------------------------------------------+
                                        ^
@@ -59,38 +64,38 @@ The backend was refactored from a monolithic MVC structure to a **Hexagonal Arch
 +---------------------------------------------------------------------------------+
 |                                OUTBOUND ADAPTERS                                |
 |  - Persistence Adapters (VetPersistenceAdapter, OwnerPersistenceAdapter, etc.)  |
-|  - JPA Repositories & Relational Mapping (H2, MySQL, PostgreSQL)                |
+|  - Spring Data JPA Repositories (H2, MySQL, PostgreSQL)                         |
 +---------------------------------------------------------------------------------+
 ```
 
-### Key Principles Applied
+### Key Design Points
 
-1. **Dependency Inversion**: Domain models and use cases do not depend on Spring MVC or JPA annotations.
-2. **Ports and Adapters**: Inbound ports define use cases; outbound ports define data requirements. Adapters bridge web requests and persistence technologies.
-3. **Immutability & Encapsulation**: DTOs validate incoming requests using Jakarta Bean Validation (`@NotNull`, `@NotBlank`, `@Pattern`, `@Future`).
-4. **Backward Compatibility**: Existing Thymeleaf web views and controllers remain functional alongside new REST API endpoints.
+1. **Separation of Concerns**: Core domain models do not depend on JPA annotations or Web MVC annotations.
+2. **Ports as Contracts**: Use case interfaces define what the domain offers; repository port interfaces define what the domain needs.
+3. **Data Validation**: Request DTOs enforce field rules (`@NotNull`, `@NotBlank`, `@Pattern`, `@Future`) using standard Jakarta Validation.
+4. **Backward Compatibility**: The original Thymeleaf views and web controllers remain functional alongside the new REST endpoints.
 
 ---
 
-## Bounded Contexts and Modular Structure
+## Project Structure
 
-The codebase is structured under `backend/spring-petclinic/src/main/java/org/springframework/samples/petclinic/`:
+All new modular code is placed under `backend/spring-petclinic/src/main/java/org/springframework/samples/petclinic/`:
 
 ```
 petclinic/
-├── common/                               # Cross-cutting concerns
-│   ├── config/OpenApiConfig.java         # OpenAPI 3.0 configuration
-│   └── exception/GlobalExceptionHandler  # RFC 7807 ProblemDetail error handler
-├── vet/                                  # Vets bounded context
+├── common/                               # Shared configuration and cross-cutting concerns
+│   ├── config/OpenApiConfig.java         # Swagger and OpenAPI metadata
+│   └── exception/GlobalExceptionHandler  # ProblemDetail (RFC 7807) error handler
+├── vet/                                  # Veterinarians module
 │   ├── domain/                           # VetModel, SpecialtyModel
 │   ├── port/
 │   │   ├── in/GetVetsUseCase.java        # Inbound Port
 │   │   └── out/VetRepositoryPort.java    # Outbound Port
 │   ├── service/VetService.java           # Use Case implementation
 │   └── adapter/
-│       ├── in/web/                       # VetRestController, Response DTOs
+│       ├── in/web/                       # VetRestController and DTOs
 │       └── out/persistence/              # VetPersistenceAdapter
-├── customer/                             # Customers & Pets bounded context
+├── customer/                             # Owners and Pets module
 │   ├── domain/                           # OwnerModel, PetModel, PetTypeModel
 │   ├── port/
 │   │   ├── in/                           # OwnerUseCase, PetUseCase
@@ -99,182 +104,182 @@ petclinic/
 │   └── adapter/
 │       ├── in/web/                       # OwnerRestController, PetRestController, DTOs
 │       └── out/persistence/              # OwnerPersistenceAdapter, PetPersistenceAdapter
-├── visit/                                # Visits bounded context
+├── visit/                                # Visits module
 │   ├── domain/                           # VisitModel
 │   ├── port/
 │   │   ├── in/VisitUseCase.java          # Inbound Port
 │   │   └── out/VisitRepositoryPort.java  # Outbound Port
-│   ├── service/VisitService.java         # Business rules (future dates check)
+│   ├── service/VisitService.java         # Visit business rules (future dates check)
 │   └── adapter/
-│       ├── in/web/                       # VisitRestController, DTOs
+│       ├── in/web/                       # VisitRestController and DTOs
 │       └── out/persistence/              # VisitPersistenceAdapter
-└── system/                               # Application entrypoint & actuator
+└── system/                               # Application startup and actuator endpoints
 ```
 
 ---
 
-## Technology Stack
+## Tech Stack
 
-| Component | Technology | Version |
-| :--- | :--- | :--- |
-| **Language** | Java (LTS) | **21** |
-| **Framework** | Spring Boot | **4.1.0** |
-| **Persistence** | Spring Data JPA / Hibernate | 7.4.x |
-| **API Documentation** | SpringDoc OpenAPI / Swagger UI | 2.8.5 |
-| **Validation** | Jakarta Bean Validation / Hibernate Validator | 9.1.x |
-| **Databases** | H2 (in-memory default), MySQL 9.7, PostgreSQL 18.4 | Multi-profile |
-| **Testing** | JUnit 5, Mockito, AssertJ, MockMvc, Testcontainers | 100% Pass |
-| **Build Tool** | Apache Maven (Wrapper included) | 3.9.x |
+- **Java**: 21 (LTS)
+- **Framework**: Spring Boot 4.1.0
+- **Data Access**: Spring Data JPA / Hibernate
+- **API Docs**: SpringDoc OpenAPI 2.8.5 (Swagger UI)
+- **Validation**: Jakarta Bean Validation (Hibernate Validator)
+- **Databases**: H2 (in-memory, default), MySQL 9.7, PostgreSQL 18.4
+- **Testing**: JUnit 5, Mockito, AssertJ, MockMvc, Testcontainers
+- **Build**: Apache Maven (via included Maven Wrapper)
 
 ---
 
 ## Prerequisites
 
-- **Java Development Kit (JDK)**: Version 21 LTS installed and set on your environment path.
-  ```powershell
+- **JDK 21** installed and configured in your path (`JAVA_HOME`).
+  ```bash
   java -version
-  # Should output: openjdk version "21.0.x"
   ```
-- **Git**: Installed for version control.
-- **Docker** *(Optional)*: Required only if running tests against containerized MySQL or PostgreSQL. Default tests run with in-memory H2.
+- **Git** for version control.
+- **Docker** *(optional)*: Only required if you want to run integration tests against containerized MySQL or PostgreSQL. By default, in-memory H2 is used.
 
 ---
 
-## Build and Run Instructions
+## Build and Run
 
-All Maven commands should be run from inside the `backend/spring-petclinic` directory:
+Run all commands from the `backend/spring-petclinic` directory:
 
-```powershell
+```bash
 cd backend/spring-petclinic
 ```
 
 ### 1. Code Formatting
-Format Java code according to Spring conventions:
-```powershell
-.\mvnw.cmd spring-javaformat:apply
+Format Java source files following Spring code style:
+```bash
+./mvnw spring-javaformat:apply
+```
+*(On Windows PowerShell, use `.\mvnw.cmd spring-javaformat:apply`)*
+
+### 2. Compile
+Compile all source classes with Java 21:
+```bash
+./mvnw clean compile
 ```
 
-### 2. Compile Project
-Compile the application using Java 21:
-```powershell
-.\mvnw.cmd clean compile
+### 3. Run Tests
+Run the entire test suite (unit tests, web slice tests, and integration tests):
+```bash
+./mvnw test
 ```
 
-### 3. Run Automated Tests
-Execute all unit and integration tests (100 tests):
-```powershell
-.\mvnw.cmd test
+### 4. Package JAR
+Package the executable application JAR:
+```bash
+./mvnw clean package -DskipTests
 ```
+The output file is generated at `target/spring-petclinic-4.0.0-SNAPSHOT.jar`.
 
-### 4. Package Application
-Build the executable production JAR:
-```powershell
-.\mvnw.cmd clean package -DskipTests
+### 5. Start the Application
+Run locally using the Spring Boot Maven plugin:
+```bash
+./mvnw spring-boot:run
 ```
-The resulting JAR is created at `target/spring-petclinic-4.0.0-SNAPSHOT.jar`.
-
-### 5. Run the Application
-Start the Spring Boot application on default port `8080`:
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-Alternatively, run the packaged JAR:
-```powershell
+Or run the packaged JAR:
+```bash
 java -jar target/spring-petclinic-4.0.0-SNAPSHOT.jar
 ```
+The application starts at `http://localhost:8080`.
 
 ---
 
-## OpenAPI and Swagger UI
+## API Documentation (Swagger UI)
 
-Once the application is running, the interactive documentation is available in your browser:
+When the application is running, you can explore and test the endpoints directly in your browser:
 
 - **Swagger UI**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 - **OpenAPI Schema (JSON)**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 
 ---
 
-## REST Endpoints Reference
+## REST Endpoints
 
-### 1. Veterinarians (`/api/v1/vets`)
+### 1. Veterinarians
 
 | Method | Endpoint | Description | Status Code |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/api/v1/vets` | List all veterinarians with specialties | `200 OK` |
+| `GET` | `/api/v1/vets` | List all vets and their specialties | `200 OK` |
 
-**Example Request:**
+**Example request:**
 ```bash
 curl -X GET http://localhost:8080/api/v1/vets -H "Accept: application/json"
 ```
 
 ---
 
-### 2. Owners (`/api/v1/owners`)
+### 2. Owners
 
 | Method | Endpoint | Description | Status Code |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/owners` | Register a new pet owner | `201 Created` |
+| `POST` | `/api/v1/owners` | Register a new owner | `201 Created` |
 | `GET` | `/api/v1/owners` | Search owners by last name | `200 OK` |
-| `GET` | `/api/v1/owners/{ownerId}` | Get owner details by identifier | `200 OK` / `404 Not Found` |
+| `GET` | `/api/v1/owners/{ownerId}` | Get owner details by id | `200 OK` / `404 Not Found` |
 
-**Example: Register Owner**
+**Example request (Create Owner):**
 ```bash
 curl -X POST http://localhost:8080/api/v1/owners \
   -H "Content-Type: application/json" \
   -d '{
-    "firstName": "John",
-    "lastName": "Doe",
-    "address": "123 Elm Street",
-    "city": "Springfield",
-    "telephone": "5551234567"
+    "firstName": "George",
+    "lastName": "Franklin",
+    "address": "110 W. Liberty St.",
+    "city": "Madison",
+    "telephone": "6085551023"
   }'
 ```
 
 ---
 
-### 3. Pets (`/api/v1/owners/{ownerId}/pets`)
+### 3. Pets
 
 | Method | Endpoint | Description | Status Code |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/v1/owners/{ownerId}/pets` | Add a new pet to an owner | `201 Created` |
-| `GET` | `/api/v1/owners/{ownerId}/pets/types` | List available pet types | `200 OK` |
+| `GET` | `/api/v1/owners/{ownerId}/pets/types` | List all available pet types | `200 OK` |
 
-**Example: Add Pet**
+**Example request (Add Pet):**
 ```bash
 curl -X POST http://localhost:8080/api/v1/owners/1/pets \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Bella",
-    "birthDate": "2022-04-15",
-    "typeId": 2
+    "name": "Leo",
+    "birthDate": "2023-01-15",
+    "typeId": 1
   }'
 ```
 
 ---
 
-### 4. Visits (`/api/v1/owners/{ownerId}/pets/{petId}/visits`)
+### 4. Visits
 
 | Method | Endpoint | Description | Status Code |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/v1/owners/{ownerId}/pets/{petId}/visits` | Schedule a visit for a pet | `201 Created` |
-| `GET` | `/api/v1/owners/{ownerId}/pets/{petId}/visits` | Retrieve visit history for a pet | `200 OK` |
+| `GET` | `/api/v1/owners/{ownerId}/pets/{petId}/visits` | Get all visits for a pet | `200 OK` |
 
-**Example: Book Visit**
+**Example request (Schedule Visit):**
 ```bash
 curl -X POST http://localhost:8080/api/v1/owners/1/pets/7/visits \
   -H "Content-Type: application/json" \
   -d '{
     "date": "2026-12-01",
-    "description": "Routine vaccination and dental cleaning"
+    "description": "Rabies vaccination"
   }'
 ```
 
 ---
 
-## Error Handling Standards
+## Error Handling
 
-All REST API exceptions are handled uniformly by `GlobalExceptionHandler` using the RFC 7807 standard (`application/problem+json`):
+REST API errors return standard **RFC 7807 ProblemDetail** responses (`application/problem+json`).
 
+Example validation error (`400 Bad Request`):
 ```json
 {
   "type": "https://petclinic.example.com/errors/validation-error",
@@ -290,18 +295,28 @@ All REST API exceptions are handled uniformly by `GlobalExceptionHandler` using 
 }
 ```
 
+Example not found error (`404 Not Found`):
+```json
+{
+  "title": "Resource Not Found",
+  "status": 404,
+  "detail": "Owner not found with id: 99",
+  "timestamp": "2026-11-10T19:30:00Z"
+}
+```
+
 ---
 
-## GitFlow Branching Strategy
+## GitFlow Workflow
 
-Development strictly adheres to the GitFlow branching model:
+The repository follows standard **GitFlow** branching:
 
-- `main`: Production-ready release branch.
-- `develop`: Primary integration branch for completed features.
-- `feature/*`: Dedicated branches for modular task development.
+- `main`: Stable release branch.
+- `develop`: Integration branch for developed features.
+- `feature/*`: Dedicated branches for each module and task.
 
 ### Commit History
-All commits are written in clean, concise, human-natural English without pretentious vocabulary:
+All commits are written in simple and clear English:
 - `Initial commit: import spring petclinic base project`
 - `upgrade project to java 21 and add openapi dependencies`
 - `add vets domain model, ports and service`
@@ -311,10 +326,4 @@ All commits are written in clean, concise, human-natural English without pretent
 - `add visit domain, service and rest controller`
 - `add global exception handler and openapi configuration`
 - `verify all unit and integration tests pass`
-- `add comprehensive documentation and ai usage report`
-
----
-
-## AI Tooling and Assistance
-
-This modernization project was executed using **Google Antigravity (Advanced Agentic AI)** following paired-programming practices. Comprehensive documentation of prompts, architectural decisions, and human validation gates can be found in [AI_USAGE_REPORT.md](AI_USAGE_REPORT.md).
+- `add project documentation and api reference`
