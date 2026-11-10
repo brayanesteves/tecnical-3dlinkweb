@@ -142,6 +142,10 @@ Inicia el servidor Spring Boot en el puerto `8080`:
 # En Windows: .\mvnw.cmd spring-boot:run
 ```
 
+- **URL de Verificación de Arranque (Health Check)**: [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+- **URL de Swagger UI**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- **URL de OpenAPI JSON**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+
 ### 6. Empaquetar y ejecutar como archivo JAR
 Para generar el archivo ejecutable listo para producción:
 ```bash
@@ -175,10 +179,12 @@ curl -X GET http://localhost:8080/api/v1/vets -H "Accept: application/json"
 
 ### Dueños (Owners)
 - `POST /api/v1/owners`: Crea un nuevo dueño con validaciones de campos.
-- `GET /api/v1/owners`: Búsqueda de dueños por apellido (query param opcional `lastName`).
+- `GET /api/v1/owners`: Búsqueda de dueños por apellido (query param opcional `lastName`, con paginación `page` y `size`).
 - `GET /api/v1/owners/{ownerId}`: Consulta el detalle de un dueño por su ID.
+- `PUT /api/v1/owners/{ownerId}`: Actualiza los datos de contacto de un dueño existente.
 
 ```bash
+# Crear nuevo dueño
 curl -X POST http://localhost:8080/api/v1/owners \
   -H "Content-Type: application/json" \
   -d '{
@@ -188,13 +194,30 @@ curl -X POST http://localhost:8080/api/v1/owners \
     "city": "Madrid",
     "telephone": "6123456789"
   }'
+
+# Consultar dueño por ID
+curl -X GET http://localhost:8080/api/v1/owners/1 -H "Accept: application/json"
+
+# Actualizar dueño existente
+curl -X PUT http://localhost:8080/api/v1/owners/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "George",
+    "lastName": "Franklin",
+    "address": "110 W. Liberty St.",
+    "city": "Madison",
+    "telephone": "6085551023"
+  }'
 ```
 
 ### Mascotas (Pets)
+- `GET /api/v1/pet-types`: Catálogo de tipos de animales disponibles (gato, perro, lagarto, etc.).
+- `GET /api/v1/owners/{ownerId}/pets`: Lista las mascotas de un propietario.
 - `POST /api/v1/owners/{ownerId}/pets`: Registra una nueva mascota vinculada a un dueño.
-- `GET /api/v1/owners/{ownerId}/pets/types`: Lista los tipos de mascotas admitidos (gato, perro, lagarto, etc.).
+- `PUT /api/v1/owners/{ownerId}/pets/{petId}`: Actualiza los datos de una mascota.
 
 ```bash
+# Registrar nueva mascota (typeId: 2 corresponde a 'dog')
 curl -X POST http://localhost:8080/api/v1/owners/1/pets \
   -H "Content-Type: application/json" \
   -d '{
@@ -202,20 +225,66 @@ curl -X POST http://localhost:8080/api/v1/owners/1/pets \
     "birthDate": "2023-05-10",
     "typeId": 2
   }'
+
+# Actualizar mascota existente
+curl -X PUT http://localhost:8080/api/v1/owners/1/pets/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Leo Modern",
+    "birthDate": "2020-09-07",
+    "typeId": 1
+  }'
 ```
 
 ### Visitas (Visits)
-- `POST /api/v1/owners/{ownerId}/pets/{petId}/visits`: Agenda una cita médica (la fecha debe ser futura).
+- `POST /api/v1/owners/{ownerId}/pets/{petId}/visits`: Agenda una cita médica (**la fecha debe ser estrictamente futura**).
 - `GET /api/v1/owners/{ownerId}/pets/{petId}/visits`: Obtiene el historial de consultas de una mascota.
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/owners/1/pets/7/visits \
+# Agendar visita exitosa (fecha futura)
+curl -X POST http://localhost:8080/api/v1/owners/1/pets/1/visits \
   -H "Content-Type: application/json" \
   -d '{
     "date": "2026-12-15",
     "description": "Vacuna anual y revision general"
   }'
+
+# Historial de visitas
+curl -X GET http://localhost:8080/api/v1/owners/1/pets/1/visits -H "Accept: application/json"
 ```
+
+### Casos de Validación y Manejo de Errores
+
+#### 1. Error de fecha pasada al agendar visita (Devuelve HTTP 400 Bad Request)
+```bash
+curl -X POST http://localhost:8080/api/v1/owners/1/pets/1/visits \
+  -H "Content-Type: application/json" \
+  -d '{
+    "date": "2020-01-01",
+    "description": "Visita en fecha pasada"
+  }'
+```
+
+#### 2. Error de validación en teléfono (Devuelve HTTP 400 Bad Request)
+```bash
+curl -X POST http://localhost:8080/api/v1/owners \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Ana",
+    "lastName": "Gomez",
+    "address": "Calle 1",
+    "city": "Bogota",
+    "telephone": "123"
+  }'
+```
+
+#### 3. Error por recurso no encontrado (Devuelve HTTP 404 Not Found)
+```bash
+curl -X GET http://localhost:8080/api/v1/owners/99999 -H "Accept: application/json"
+```
+
+### Restablecer Datos de Prueba (Reproducibilidad)
+La aplicación utiliza la base de datos H2 en memoria por defecto. Cada vez que la aplicación se reinicia, el esquema (`schema.sql`) y los datos semilla (`data.sql`) se recargan automáticamente a su estado original, asegurando que las pruebas sean 100% reproducibles.
 
 ---
 
@@ -247,6 +316,23 @@ El repositorio sigue la estrategia de ramas de GitFlow:
 - `main`: Código listo para producción.
 - `develop`: Rama principal de integración.
 - `feature/*`: Ramas de trabajo para cada funcionalidad (`feature/java21-upgrade`, `feature/vets-module`, `feature/customers-module`, etc.).
+
+---
+
+## Formato de Comunicación de la Entrega (Rúbrica Oficial)
+
+```text
+Nombre del candidato: Brayan Esteves
+Repositorio público propio: https://github.com/brayanesteves/tecnical-3dlinkweb
+Rama de entrega: main
+Tag final: v1.0.0
+Ruta de instrucciones: README.md
+Ruta de documentación de arquitectura: docs/02-arquitectura.md
+Ruta de diagnóstico legacy: docs/01-diagnostico-legacy.md
+Ruta de plan de migración: docs/03-plan-migracion.md
+Ruta de bitácora IA: docs/04-uso-ia.md
+Observaciones: Modernización a Java 21 LTS, arquitectura hexagonal modular con 100 pruebas automatizadas pasando (0 fallos) y documentación OpenAPI 3.0 / Swagger UI.
+```
 
 ---
 ---
@@ -389,6 +475,10 @@ Starts the Spring Boot server on port `8080`:
 # On Windows: .\mvnw.cmd spring-boot:run
 ```
 
+- **Health Check URL**: [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health)
+- **Swagger UI URL**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- **OpenAPI JSON URL**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+
 ### 6. Package and run as a JAR
 To build the production JAR file:
 ```bash
@@ -422,10 +512,12 @@ curl -X GET http://localhost:8080/api/v1/vets -H "Accept: application/json"
 
 ### Owners
 - `POST /api/v1/owners`: Create a new owner with field validation.
-- `GET /api/v1/owners`: Search owners by last name (optional `lastName` query param).
+- `GET /api/v1/owners`: Search owners by last name (optional `lastName` query param, with `page` and `size` pagination).
 - `GET /api/v1/owners/{ownerId}`: Retrieve owner details by ID.
+- `PUT /api/v1/owners/{ownerId}`: Update an existing owner's contact details.
 
 ```bash
+# Create a new owner
 curl -X POST http://localhost:8080/api/v1/owners \
   -H "Content-Type: application/json" \
   -d '{
@@ -435,13 +527,30 @@ curl -X POST http://localhost:8080/api/v1/owners \
     "city": "Madison",
     "telephone": "6085551023"
   }'
+
+# Get owner by ID
+curl -X GET http://localhost:8080/api/v1/owners/1 -H "Accept: application/json"
+
+# Update existing owner
+curl -X PUT http://localhost:8080/api/v1/owners/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "George",
+    "lastName": "Franklin",
+    "address": "120 W. Liberty St.",
+    "city": "Madison",
+    "telephone": "6085551023"
+  }'
 ```
 
 ### Pets
+- `GET /api/v1/pet-types`: Catalog of supported pet species (cat, dog, bird, etc.).
+- `GET /api/v1/owners/{ownerId}/pets`: List pets for a given owner.
 - `POST /api/v1/owners/{ownerId}/pets`: Add a pet to an owner.
-- `GET /api/v1/owners/{ownerId}/pets/types`: List available pet types.
+- `PUT /api/v1/owners/{ownerId}/pets/{petId}`: Update an existing pet.
 
 ```bash
+# Add a pet to an owner (typeId: 2 is dog)
 curl -X POST http://localhost:8080/api/v1/owners/1/pets \
   -H "Content-Type: application/json" \
   -d '{
@@ -449,20 +558,66 @@ curl -X POST http://localhost:8080/api/v1/owners/1/pets \
     "birthDate": "2023-01-15",
     "typeId": 1
   }'
+
+# Update pet details
+curl -X PUT http://localhost:8080/api/v1/owners/1/pets/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Leo Modern",
+    "birthDate": "2020-09-07",
+    "typeId": 1
+  }'
 ```
 
 ### Visits
-- `POST /api/v1/owners/{ownerId}/pets/{petId}/visits`: Book a visit (date must be in the future).
+- `POST /api/v1/owners/{ownerId}/pets/{petId}/visits`: Book a visit (**appointment date must be in the future**).
 - `GET /api/v1/owners/{ownerId}/pets/{petId}/visits`: Get all visits for a pet.
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/owners/1/pets/7/visits \
+# Book a visit (future date)
+curl -X POST http://localhost:8080/api/v1/owners/1/pets/1/visits \
   -H "Content-Type: application/json" \
   -d '{
     "date": "2026-12-01",
     "description": "Routine checkup and rabies shot"
   }'
+
+# Get visit history
+curl -X GET http://localhost:8080/api/v1/owners/1/pets/1/visits -H "Accept: application/json"
 ```
+
+### Error Scenarios and Validation Handling
+
+#### 1. Past visit date error (Returns HTTP 400 Bad Request)
+```bash
+curl -X POST http://localhost:8080/api/v1/owners/1/pets/1/visits \
+  -H "Content-Type: application/json" \
+  -d '{
+    "date": "2020-01-01",
+    "description": "Past date checkup"
+  }'
+```
+
+#### 2. Telephone validation error (Returns HTTP 400 Bad Request)
+```bash
+curl -X POST http://localhost:8080/api/v1/owners \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "address": "Main St",
+    "city": "Boston",
+    "telephone": "123"
+  }'
+```
+
+#### 3. Not found error (Returns HTTP 404 Not Found)
+```bash
+curl -X GET http://localhost:8080/api/v1/owners/99999 -H "Accept: application/json"
+```
+
+### Resetting Test Data (Reproducibility)
+The application defaults to an in-memory H2 database. Whenever the service restarts, `schema.sql` and `data.sql` repopulate the original seed data automatically, ensuring 100% reproducible test runs.
 
 ---
 
@@ -494,3 +649,20 @@ The repository follows standard **GitFlow** branching:
 - `main`: Production-ready release branch.
 - `develop`: Integration branch for developed features.
 - `feature/*`: Dedicated branches for each module and task.
+
+---
+
+## Submission Communication Format
+
+```text
+Candidate Name: Brayan Esteves
+Public Repository: https://github.com/brayanesteves/tecnical-3dlinkweb
+Release Branch: main
+Final Tag: v1.0.0
+Instructions File: README.md
+Architecture Documentation: docs/02-arquitectura.md
+Legacy Diagnostics: docs/01-diagnostico-legacy.md
+Migration Plan: docs/03-plan-migracion.md
+AI Log: docs/04-uso-ia.md
+Notes: Modernization to Java 21 LTS and modular hexagonal architecture with 100 passing automated tests (0 failures) and OpenAPI 3.0 / Swagger UI documentation.
+```
