@@ -1,38 +1,307 @@
 # Spring PetClinic - Modernized Backend
 
-A modernized backend for the Spring PetClinic application. The project was migrated to **Java 21 LTS**, refactored into a **Hexagonal Architecture (Ports and Adapters)**, and equipped with a full **REST API** documented with **OpenAPI 3.0 (Swagger UI)**.
+[Español](#versión-en-español) | [English](#english-version)
 
 ---
 
-## Table of Contents
+# Versión en Español
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Project Structure](#project-structure)
-- [Tech Stack](#tech-stack)
-- [Prerequisites](#prerequisites)
-- [Build and Run](#build-and-run)
-- [API Documentation (Swagger UI)](#api-documentation-swagger-ui)
-- [REST Endpoints](#rest-endpoints)
-- [Error Handling](#error-handling)
-- [GitFlow Workflow](#gitflow-workflow)
+## ¿De qué trata el proyecto?
 
----
+Este proyecto es una modernización del backend clásico de **Spring PetClinic**, un sistema para la gestión operativa de una clínica veterinaria. Permite administrar:
 
-## Overview
+- **Veterinarios**: Consulta de profesionales y sus especialidades (radiología, cirugía, odontología, etc.).
+- **Dueños (Owners)**: Registro, búsqueda por apellido y consulta de datos de contacto de los clientes.
+- **Mascotas (Pets)**: Registro de animales asociados a un dueño, con su fecha de nacimiento y tipo (perro, gato, ave, etc.).
+- **Visitas (Visits)**: Agendamiento de citas médicas y control del historial clínico de cada mascota.
 
-The original Spring PetClinic application was refactored to separate business logic from technical infrastructure and framework concerns:
-
-- **Hexagonal Architecture**: Business models and use cases are isolated from persistence and web layers.
-- **Java 21**: Upgraded to the modern LTS release.
-- **REST API & Swagger**: Replaces legacy server-side page forms with clean JSON endpoints, input validation, and interactive documentation.
-- **Automated Tests**: Preserves all existing functionality while adding comprehensive unit and integration tests.
+El objetivo principal de esta modernización fue actualizar la aplicación a **Java 21 LTS**, desacoplar la lógica de negocio mediante una **Arquitectura Hexagonal (Puertos y Adaptadores)**, y construir una **API REST** documentada con **OpenAPI 3.0 (Swagger UI)**.
 
 ---
 
-## Architecture
+## Stack Tecnológico
 
-The project follows the **Ports and Adapters** pattern:
+- **Lenguaje**: Java 21 (LTS)
+- **Framework**: Spring Boot 4.1.0
+- **Persistencia**: Spring Data JPA / Hibernate
+- **Bases de Datos**: H2 (en memoria para desarrollo y pruebas), MySQL 9.7 y PostgreSQL 18.4
+- **Documentación de API**: SpringDoc OpenAPI 2.8.5 (Swagger UI)
+- **Validación**: Jakarta Bean Validation (Hibernate Validator)
+- **Pruebas**: JUnit 5, Mockito, AssertJ, MockMvc y Testcontainers
+- **Gestor de Construcción**: Apache Maven (incluye Maven Wrapper `mvnw`)
+
+---
+
+## Cómo clonar el repositorio
+
+Para clonar el proyecto completo en tu máquina:
+
+```bash
+# Vía SSH (si tienes tu clave configurada)
+git clone git@github-own:brayanesteves/tecnical-3dlinkweb.git
+
+# O vía HTTPS
+git clone https://github.com/brayanesteves/tecnical-3dlinkweb.git
+```
+
+Una vez clonado, entra a la carpeta del proyecto backend:
+
+```bash
+cd tecnical-3dlinkweb/backend/spring-petclinic
+```
+
+---
+
+## Cómo funciona la arquitectura
+
+Se aplicó una **Arquitectura Hexagonal (Puertos y Adaptadores)** para separar claramente las reglas de negocio de los detalles de infraestructura (controladores web y base de datos).
+
+```
++---------------------------------------------------------------------------------+
+|                              ADAPTADORES DE ENTRADA                             |
+|  - Controladores REST (/api/v1/*)                                               |
+|  - DTOs de Entrada/Salida con Bean Validation                                   |
+|  - Anotaciones Swagger / OpenAPI 3.0                                            |
++---------------------------------------------------------------------------------+
+                                       |
+                                       v  (Llama al Puerto de Entrada)
++---------------------------------------------------------------------------------+
+|                                 NÚCLEO DOMINIO                                  |
+|  +---------------------------+             +----------------------------------+ |
+|  |    PUERTOS DE ENTRADA     |             |        PUERTOS DE SALIDA         | |
+|  |     (Casos de Uso)        |             |      (Interfaces Repository)     | |
+|  +---------------------------+             +----------------------------------+ |
+|               ^                                             ^                   |
+|               | implementa                                  | consume           |
+|  +----------------------------------------------------------+                 | |
+|  |                    SERVICIOS Y REGLAS DE NEGOCIO                           | |
+|  |  - Validaciones de fechas futuras, mapeos y lógica de aplicación           | |
+|  +----------------------------------------------------------------------------+ |
+|  |                          MODELOS DE DOMINIO                                | |
+|  |  - Clases POJO puras: VetModel, OwnerModel, PetModel, VisitModel           | |
+|  +----------------------------------------------------------------------------+ |
++---------------------------------------------------------------------------------+
+                                       ^
+                                       | implementa Puerto de Salida
++---------------------------------------------------------------------------------+
+|                              ADAPTADORES DE SALIDA                              |
+|  - Adaptadores de persistencia (VetPersistenceAdapter, etc.)                    |
+|  - Repositorios JPA y entidades de base de datos (H2, MySQL, PostgreSQL)       |
++---------------------------------------------------------------------------------+
+```
+
+### Estructura modular del código
+
+El código backend se organiza en paquetes dentro de `src/main/java/org/springframework/samples/petclinic/`:
+
+- **`common/`**: Aspectos transversales, configuración centralizada de OpenAPI y manejador global de excepciones con el estándar RFC 7807 (`ProblemDetail`).
+- **`vet/`**: Módulo de veterinarios (`domain`, `port/in`, `port/out`, `service`, `adapter/in/web`, `adapter/out/persistence`).
+- **`customer/`**: Módulo de dueños y mascotas, gestión de tipos de animales y datos de contacto.
+- **`visit/`**: Módulo de citas médicas, validación de fechas futuras e historial de consultas.
+
+---
+
+## Cómo levantarlo y probarlo
+
+Asegúrate de ejecutar estos comandos dentro de `backend/spring-petclinic`.
+
+### 1. Requisitos previos
+- Tener instalado **Java 21**. Verifica tu versión ejecutando:
+  ```bash
+  java -version
+  ```
+- Opcional: Docker Desktop si deseas ejecutar las pruebas contra contenedores reales de MySQL o PostgreSQL.
+
+### 2. Formatear el código
+Para aplicar el formato oficial de Spring:
+```bash
+# En Linux/macOS
+./mvnw spring-javaformat:apply
+
+# En Windows PowerShell
+.\mvnw.cmd spring-javaformat:apply
+```
+
+### 3. Compilar el proyecto
+```bash
+./mvnw clean compile
+# En Windows: .\mvnw.cmd clean compile
+```
+
+### 4. Ejecutar todas las pruebas automatizadas
+Corre las 100 pruebas unitarias, de integración y controladores:
+```bash
+./mvnw test
+# En Windows: .\mvnw.cmd test
+```
+
+### 5. Levantar la aplicación en desarrollo
+Inicia el servidor Spring Boot en el puerto `8080`:
+```bash
+./mvnw spring-boot:run
+# En Windows: .\mvnw.cmd spring-boot:run
+```
+
+### 6. Empaquetar y ejecutar como archivo JAR
+Para generar el archivo ejecutable listo para producción:
+```bash
+./mvnw clean package -DskipTests
+# En Windows: .\mvnw.cmd clean package -DskipTests
+```
+El archivo JAR se crea en `target/spring-petclinic-4.0.0-SNAPSHOT.jar`. Lo inicias con:
+```bash
+java -jar target/spring-petclinic-4.0.0-SNAPSHOT.jar
+```
+
+---
+
+## Documentación de la API (Swagger UI)
+
+Con la aplicación en marcha, puedes abrir en tu navegador:
+
+- **Interfaz interactiva (Swagger UI)**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- **Especificación OpenAPI (JSON)**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+
+---
+
+## Endpoints de la API REST
+
+### Veterinarios
+- `GET /api/v1/vets`: Lista todos los veterinarios y sus especialidades.
+
+```bash
+curl -X GET http://localhost:8080/api/v1/vets -H "Accept: application/json"
+```
+
+### Dueños (Owners)
+- `POST /api/v1/owners`: Crea un nuevo dueño con validaciones de campos.
+- `GET /api/v1/owners`: Búsqueda de dueños por apellido (query param opcional `lastName`).
+- `GET /api/v1/owners/{ownerId}`: Consulta el detalle de un dueño por su ID.
+
+```bash
+curl -X POST http://localhost:8080/api/v1/owners \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Carlos",
+    "lastName": "Santana",
+    "address": "Av. Principal 456",
+    "city": "Madrid",
+    "telephone": "6123456789"
+  }'
+```
+
+### Mascotas (Pets)
+- `POST /api/v1/owners/{ownerId}/pets`: Registra una nueva mascota vinculada a un dueño.
+- `GET /api/v1/owners/{ownerId}/pets/types`: Lista los tipos de mascotas admitidos (gato, perro, lagarto, etc.).
+
+```bash
+curl -X POST http://localhost:8080/api/v1/owners/1/pets \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Max",
+    "birthDate": "2023-05-10",
+    "typeId": 2
+  }'
+```
+
+### Visitas (Visits)
+- `POST /api/v1/owners/{ownerId}/pets/{petId}/visits`: Agenda una cita médica (la fecha debe ser futura).
+- `GET /api/v1/owners/{ownerId}/pets/{petId}/visits`: Obtiene el historial de consultas de una mascota.
+
+```bash
+curl -X POST http://localhost:8080/api/v1/owners/1/pets/7/visits \
+  -H "Content-Type: application/json" \
+  -d '{
+    "date": "2026-12-15",
+    "description": "Vacuna anual y revision general"
+  }'
+```
+
+---
+
+## Manejo de Errores
+
+Todos los errores REST devuelven respuestas estandarizadas bajo **RFC 7807 (`application/problem+json`)**:
+
+```json
+{
+  "type": "https://petclinic.example.com/errors/validation-error",
+  "title": "Validation Error",
+  "status": 400,
+  "detail": "Request validation failed",
+  "instance": "/api/v1/owners",
+  "timestamp": "2026-11-10T19:30:00Z",
+  "errors": {
+    "telephone": "Telephone must be exactly 10 digits",
+    "firstName": "First name must not be blank"
+  }
+}
+```
+
+---
+
+## Flujo GitFlow
+
+El repositorio sigue la estrategia de ramas de GitFlow:
+
+- `main`: Código listo para producción.
+- `develop`: Rama principal de integración.
+- `feature/*`: Ramas de trabajo para cada funcionalidad (`feature/java21-upgrade`, `feature/vets-module`, `feature/customers-module`, etc.).
+
+---
+---
+
+# English Version
+
+## What is this project about?
+
+This project is a modernization of the classic **Spring PetClinic** backend, a management system for a veterinary clinic. It handles:
+
+- **Veterinarians**: Viewing clinic vets and their specialties (radiology, surgery, dentistry, etc.).
+- **Owners**: Registering clients, searching by last name, and checking contact details.
+- **Pets**: Adding pets associated with an owner, including birth date and pet type (dog, cat, bird, etc.).
+- **Visits**: Scheduling appointments and tracking medical history for each pet.
+
+The goal of this modernization was to upgrade the application to **Java 21 LTS**, decouple business logic using a **Hexagonal Architecture (Ports and Adapters)**, and provide a clean **REST API** documented with **OpenAPI 3.0 (Swagger UI)**.
+
+---
+
+## Tech Stack
+
+- **Language**: Java 21 (LTS)
+- **Framework**: Spring Boot 4.1.0
+- **Data Access**: Spring Data JPA / Hibernate
+- **Databases**: H2 (in-memory for local dev and tests), MySQL 9.7, and PostgreSQL 18.4
+- **API Documentation**: SpringDoc OpenAPI 2.8.5 (Swagger UI)
+- **Validation**: Jakarta Bean Validation (Hibernate Validator)
+- **Testing**: JUnit 5, Mockito, AssertJ, MockMvc, and Testcontainers
+- **Build Tool**: Apache Maven (includes Maven Wrapper `mvnw`)
+
+---
+
+## How to clone the repository
+
+Clone the full project to your machine:
+
+```bash
+# Using SSH
+git clone git@github-own:brayanesteves/tecnical-3dlinkweb.git
+
+# Or using HTTPS
+git clone https://github.com/brayanesteves/tecnical-3dlinkweb.git
+```
+
+Then navigate to the backend directory:
+
+```bash
+cd tecnical-3dlinkweb/backend/spring-petclinic
+```
+
+---
+
+## How the architecture works
+
+The project uses **Hexagonal Architecture (Ports and Adapters)** to keep business logic independent of external frameworks, web controllers, and databases.
 
 ```
 +---------------------------------------------------------------------------------+
@@ -68,160 +337,94 @@ The project follows the **Ports and Adapters** pattern:
 +---------------------------------------------------------------------------------+
 ```
 
-### Key Design Points
+### Module breakdown
 
-1. **Separation of Concerns**: Core domain models do not depend on JPA annotations or Web MVC annotations.
-2. **Ports as Contracts**: Use case interfaces define what the domain offers; repository port interfaces define what the domain needs.
-3. **Data Validation**: Request DTOs enforce field rules (`@NotNull`, `@NotBlank`, `@Pattern`, `@Future`) using standard Jakarta Validation.
-4. **Backward Compatibility**: The original Thymeleaf views and web controllers remain functional alongside the new REST endpoints.
+Code is organized under `src/main/java/org/springframework/samples/petclinic/`:
 
----
-
-## Project Structure
-
-All new modular code is placed under `backend/spring-petclinic/src/main/java/org/springframework/samples/petclinic/`:
-
-```
-petclinic/
-├── common/                               # Shared configuration and cross-cutting concerns
-│   ├── config/OpenApiConfig.java         # Swagger and OpenAPI metadata
-│   └── exception/GlobalExceptionHandler  # ProblemDetail (RFC 7807) error handler
-├── vet/                                  # Veterinarians module
-│   ├── domain/                           # VetModel, SpecialtyModel
-│   ├── port/
-│   │   ├── in/GetVetsUseCase.java        # Inbound Port
-│   │   └── out/VetRepositoryPort.java    # Outbound Port
-│   ├── service/VetService.java           # Use Case implementation
-│   └── adapter/
-│       ├── in/web/                       # VetRestController and DTOs
-│       └── out/persistence/              # VetPersistenceAdapter
-├── customer/                             # Owners and Pets module
-│   ├── domain/                           # OwnerModel, PetModel, PetTypeModel
-│   ├── port/
-│   │   ├── in/                           # OwnerUseCase, PetUseCase
-│   │   └── out/                          # OwnerRepositoryPort, PetRepositoryPort
-│   ├── service/                          # OwnerService, PetService
-│   └── adapter/
-│       ├── in/web/                       # OwnerRestController, PetRestController, DTOs
-│       └── out/persistence/              # OwnerPersistenceAdapter, PetPersistenceAdapter
-├── visit/                                # Visits module
-│   ├── domain/                           # VisitModel
-│   ├── port/
-│   │   ├── in/VisitUseCase.java          # Inbound Port
-│   │   └── out/VisitRepositoryPort.java  # Outbound Port
-│   ├── service/VisitService.java         # Visit business rules (future dates check)
-│   └── adapter/
-│       ├── in/web/                       # VisitRestController and DTOs
-│       └── out/persistence/              # VisitPersistenceAdapter
-└── system/                               # Application startup and actuator endpoints
-```
+- **`common/`**: Cross-cutting config, OpenAPI setup, and global exception handling using RFC 7807 (`ProblemDetail`).
+- **`vet/`**: Veterinarians module (`domain`, `port/in`, `port/out`, `service`, `adapter/in/web`, `adapter/out/persistence`).
+- **`customer/`**: Owners and pets module, handling owner records, pet details, and pet types.
+- **`visit/`**: Visits module, handling appointment booking with future date validation and visit history.
 
 ---
 
-## Tech Stack
+## How to build and run
 
-- **Java**: 21 (LTS)
-- **Framework**: Spring Boot 4.1.0
-- **Data Access**: Spring Data JPA / Hibernate
-- **API Docs**: SpringDoc OpenAPI 2.8.5 (Swagger UI)
-- **Validation**: Jakarta Bean Validation (Hibernate Validator)
-- **Databases**: H2 (in-memory, default), MySQL 9.7, PostgreSQL 18.4
-- **Testing**: JUnit 5, Mockito, AssertJ, MockMvc, Testcontainers
-- **Build**: Apache Maven (via included Maven Wrapper)
+Make sure to run these commands inside the `backend/spring-petclinic` directory.
 
----
-
-## Prerequisites
-
-- **JDK 21** installed and configured in your path (`JAVA_HOME`).
+### 1. Prerequisites
+- **Java 21** installed. Verify your version:
   ```bash
   java -version
   ```
-- **Git** for version control.
-- **Docker** *(optional)*: Only required if you want to run integration tests against containerized MySQL or PostgreSQL. By default, in-memory H2 is used.
+- Optional: Docker Desktop if you want to run integration tests against real MySQL or PostgreSQL containers.
 
----
-
-## Build and Run
-
-Run all commands from the `backend/spring-petclinic` directory:
-
+### 2. Format code
+Apply standard Spring code formatting:
 ```bash
-cd backend/spring-petclinic
-```
-
-### 1. Code Formatting
-Format Java source files following Spring code style:
-```bash
+# On Linux/macOS
 ./mvnw spring-javaformat:apply
-```
-*(On Windows PowerShell, use `.\mvnw.cmd spring-javaformat:apply`)*
 
-### 2. Compile
-Compile all source classes with Java 21:
+# On Windows PowerShell
+.\mvnw.cmd spring-javaformat:apply
+```
+
+### 3. Compile
 ```bash
 ./mvnw clean compile
+# On Windows: .\mvnw.cmd clean compile
 ```
 
-### 3. Run Tests
-Run the entire test suite (unit tests, web slice tests, and integration tests):
+### 4. Run automated tests
+Runs all 100 unit tests, web slice tests, and integration tests:
 ```bash
 ./mvnw test
+# On Windows: .\mvnw.cmd test
 ```
 
-### 4. Package JAR
-Package the executable application JAR:
-```bash
-./mvnw clean package -DskipTests
-```
-The output file is generated at `target/spring-petclinic-4.0.0-SNAPSHOT.jar`.
-
-### 5. Start the Application
-Run locally using the Spring Boot Maven plugin:
+### 5. Run the application locally
+Starts the Spring Boot server on port `8080`:
 ```bash
 ./mvnw spring-boot:run
+# On Windows: .\mvnw.cmd spring-boot:run
 ```
-Or run the packaged JAR:
+
+### 6. Package and run as a JAR
+To build the production JAR file:
+```bash
+./mvnw clean package -DskipTests
+# On Windows: .\mvnw.cmd clean package -DskipTests
+```
+The JAR is generated at `target/spring-petclinic-4.0.0-SNAPSHOT.jar`. Start it with:
 ```bash
 java -jar target/spring-petclinic-4.0.0-SNAPSHOT.jar
 ```
-The application starts at `http://localhost:8080`.
 
 ---
 
 ## API Documentation (Swagger UI)
 
-When the application is running, you can explore and test the endpoints directly in your browser:
+With the app running, open your browser:
 
 - **Swagger UI**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 - **OpenAPI Schema (JSON)**: [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 
 ---
 
-## REST Endpoints
+## REST Endpoints Reference
 
-### 1. Veterinarians
+### Veterinarians
+- `GET /api/v1/vets`: List all vets and their specialties.
 
-| Method | Endpoint | Description | Status Code |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/v1/vets` | List all vets and their specialties | `200 OK` |
-
-**Example request:**
 ```bash
 curl -X GET http://localhost:8080/api/v1/vets -H "Accept: application/json"
 ```
 
----
+### Owners
+- `POST /api/v1/owners`: Create a new owner with field validation.
+- `GET /api/v1/owners`: Search owners by last name (optional `lastName` query param).
+- `GET /api/v1/owners/{ownerId}`: Retrieve owner details by ID.
 
-### 2. Owners
-
-| Method | Endpoint | Description | Status Code |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/owners` | Register a new owner | `201 Created` |
-| `GET` | `/api/v1/owners` | Search owners by last name | `200 OK` |
-| `GET` | `/api/v1/owners/{ownerId}` | Get owner details by id | `200 OK` / `404 Not Found` |
-
-**Example request (Create Owner):**
 ```bash
 curl -X POST http://localhost:8080/api/v1/owners \
   -H "Content-Type: application/json" \
@@ -234,16 +437,10 @@ curl -X POST http://localhost:8080/api/v1/owners \
   }'
 ```
 
----
+### Pets
+- `POST /api/v1/owners/{ownerId}/pets`: Add a pet to an owner.
+- `GET /api/v1/owners/{ownerId}/pets/types`: List available pet types.
 
-### 3. Pets
-
-| Method | Endpoint | Description | Status Code |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/owners/{ownerId}/pets` | Add a new pet to an owner | `201 Created` |
-| `GET` | `/api/v1/owners/{ownerId}/pets/types` | List all available pet types | `200 OK` |
-
-**Example request (Add Pet):**
 ```bash
 curl -X POST http://localhost:8080/api/v1/owners/1/pets \
   -H "Content-Type: application/json" \
@@ -254,22 +451,16 @@ curl -X POST http://localhost:8080/api/v1/owners/1/pets \
   }'
 ```
 
----
+### Visits
+- `POST /api/v1/owners/{ownerId}/pets/{petId}/visits`: Book a visit (date must be in the future).
+- `GET /api/v1/owners/{ownerId}/pets/{petId}/visits`: Get all visits for a pet.
 
-### 4. Visits
-
-| Method | Endpoint | Description | Status Code |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/v1/owners/{ownerId}/pets/{petId}/visits` | Schedule a visit for a pet | `201 Created` |
-| `GET` | `/api/v1/owners/{ownerId}/pets/{petId}/visits` | Get all visits for a pet | `200 OK` |
-
-**Example request (Schedule Visit):**
 ```bash
 curl -X POST http://localhost:8080/api/v1/owners/1/pets/7/visits \
   -H "Content-Type: application/json" \
   -d '{
     "date": "2026-12-01",
-    "description": "Rabies vaccination"
+    "description": "Routine checkup and rabies shot"
   }'
 ```
 
@@ -277,9 +468,8 @@ curl -X POST http://localhost:8080/api/v1/owners/1/pets/7/visits \
 
 ## Error Handling
 
-REST API errors return standard **RFC 7807 ProblemDetail** responses (`application/problem+json`).
+REST endpoints return standard **RFC 7807 ProblemDetail** errors (`application/problem+json`):
 
-Example validation error (`400 Bad Request`):
 ```json
 {
   "type": "https://petclinic.example.com/errors/validation-error",
@@ -295,35 +485,12 @@ Example validation error (`400 Bad Request`):
 }
 ```
 
-Example not found error (`404 Not Found`):
-```json
-{
-  "title": "Resource Not Found",
-  "status": 404,
-  "detail": "Owner not found with id: 99",
-  "timestamp": "2026-11-10T19:30:00Z"
-}
-```
-
 ---
 
 ## GitFlow Workflow
 
 The repository follows standard **GitFlow** branching:
 
-- `main`: Stable release branch.
+- `main`: Production-ready release branch.
 - `develop`: Integration branch for developed features.
 - `feature/*`: Dedicated branches for each module and task.
-
-### Commit History
-All commits are written in simple and clear English:
-- `Initial commit: import spring petclinic base project`
-- `upgrade project to java 21 and add openapi dependencies`
-- `add vets domain model, ports and service`
-- `add vets rest controller and openapi documentation`
-- `add customers domain models, ports and services`
-- `add owners and pets rest controllers with openapi documentation`
-- `add visit domain, service and rest controller`
-- `add global exception handler and openapi configuration`
-- `verify all unit and integration tests pass`
-- `add project documentation and api reference`
