@@ -27,6 +27,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -62,6 +63,14 @@ public class GlobalExceptionHandler {
 	public ProblemDetail handleNoSuchElementException(NoSuchElementException ex) {
 		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
 		problemDetail.setTitle("Resource Not Found");
+		problemDetail.setProperty("timestamp", Instant.now());
+		return problemDetail;
+	}
+
+	@ExceptionHandler(ResponseStatusException.class)
+	public ProblemDetail handleResponseStatusException(ResponseStatusException ex) {
+		ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(ex.getStatusCode(), ex.getReason());
+		problemDetail.setTitle(ex.getStatusCode().toString());
 		problemDetail.setProperty("timestamp", Instant.now());
 		return problemDetail;
 	}

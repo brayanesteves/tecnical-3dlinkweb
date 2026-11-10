@@ -21,7 +21,9 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.samples.petclinic.common.exception.GlobalExceptionHandler;
 import org.springframework.samples.petclinic.visit.domain.VisitModel;
 import org.springframework.samples.petclinic.visit.port.in.VisitUseCase;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -36,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(VisitRestController.class)
+@Import(GlobalExceptionHandler.class)
 class VisitRestControllerTest {
 
 	@Autowired
