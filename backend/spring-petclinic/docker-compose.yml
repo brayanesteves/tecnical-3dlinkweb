@@ -1,6 +1,41 @@
 services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: spring-petclinic:latest
+    container_name: spring-petclinic-app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=postgres
+      - POSTGRES_URL=jdbc:postgresql://postgres:5432/petclinic
+      - POSTGRES_USER=petclinic
+      - POSTGRES_PASS=petclinic
+    labels:
+      org.springframework.boot.ignore: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:18.4
+    container_name: spring-petclinic-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_PASSWORD=petclinic
+      - POSTGRES_USER=petclinic
+      - POSTGRES_DB=petclinic
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petclinic -d petclinic"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   mysql:
     image: mysql:9.7
+    container_name: spring-petclinic-mysql
     ports:
       - "3306:3306"
     environment:
@@ -11,11 +46,3 @@ services:
       - MYSQL_DATABASE=petclinic
     volumes:
       - "./conf.d:/etc/mysql/conf.d:ro"
-  postgres:
-    image: postgres:18.4
-    ports:
-      - "5433:5432"
-    environment:
-      - POSTGRES_PASSWORD=petclinic
-      - POSTGRES_USER=petclinic
-      - POSTGRES_DB=petclinic
